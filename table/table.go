@@ -405,14 +405,20 @@ func (m *Model) renderRow(rowID int) string {
 				strings.Replace(value, printableValue, runewidth.Truncate(printableValue, m.cols[i].Width, "…"), 0),
 			),
 		)
-		s = append(s, renderedCell)
+		if rowID == m.cursor {
+			s = append(s, m.styles.Selected.Render(renderedCell))
+		} else {
+			s = append(s, renderedCell)
+		}
+
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Left, s...)
-
-	if rowID == m.cursor {
-		return m.styles.Selected.Render(row)
-	}
+	/*
+		if rowID == m.cursor {
+			return m.styles.Selected.Render(row)
+		}
+	*/
 
 	return row
 }
