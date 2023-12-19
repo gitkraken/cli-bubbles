@@ -2,6 +2,7 @@ package table
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -392,34 +393,25 @@ func (m Model) headersView() string {
 func (m *Model) renderRow(rowID int) string {
 	var s = make([]string, 0, len(m.cols))
 	for i, value := range m.rows[rowID] {
+		printableValue := strings.Map(func(r rune) rune {
+			if unicode.IsGraphic(r) {
+				return r
+			}
+			return -1
+		}, value)
 		style := lipgloss.NewStyle().Width(m.cols[i].Width).MaxWidth(m.cols[i].Width).Inline(true)
-		renderedCell := m.styles.Cell.Render(style.Render(runewidth.Truncate(value, m.cols[i].Width, "…")))
-		s = append(s, renderedCell)
+		renderedCell := m.styles.Cell.Render(style.Render(strings.Replace(value, printableValue, runewidth.Truncate(printableValue, m.cols[i].Width, "…"), 1)))
+		if rowID == m.cursor {
+			renderedCell = strings.ReplaceAll(renderedCell, "\033[0m", "")
+			s = append(s, m.styles.Selected.Render(renderedCell))
+		} else {
+			s = append(s, renderedCell)
+		}
+
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Left, s...)
-
-	if rowID == m.cursor {
-		return m.styles.Selected.Render(row)
-	}
-
 	return row
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }
 
 func clamp(v, low, high int) int {
